@@ -34,7 +34,8 @@ const Login = () => {
       const dashboardMap = {
         student: '/student-dashboard',
         admin: '/admin-dashboard',
-        worker: '/worker-dashboard'
+        worker: '/worker-dashboard',
+        supervisor: '/supervisor-dashboard'
       };
       
       navigate(dashboardMap[response.user.role] || '/student-dashboard');

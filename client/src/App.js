@@ -5,6 +5,9 @@ import Register from './components/Register';
 import StudentDashboard from './components/StudentDashboard';
 import AdminDashboard from './components/AdminDashboard';
 import WorkerDashboard from './components/WorkerDashboard';
+import SupervisorDashboard from './components/SupervisorDashboard';
+import PublicDashboard from './components/PublicDashboard';
+import UserManagement from './components/UserManagement';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DarkModeProvider } from './context/DarkModeContext';
 
@@ -39,6 +42,7 @@ function App() {
       <AuthProvider>
         <Router>
           <Routes>
+            <Route path="/" element={<Navigate to="/login" />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route 
@@ -49,13 +53,21 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route 
-              path="/admin-dashboard" 
+            <Route
+              path="/admin-dashboard"
               element={
                 <ProtectedRoute allowedRole="admin">
                   <AdminDashboard />
                 </ProtectedRoute>
-              } 
+              }
+            />
+            <Route
+              path="/user-management"
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <UserManagement />
+                </ProtectedRoute>
+              }
             />
             <Route 
               path="/worker-dashboard" 
@@ -65,7 +77,15 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            <Route path="/" element={<Navigate to="/login" />} />
+            <Route 
+              path="/supervisor-dashboard" 
+              element={
+                <ProtectedRoute allowedRole="supervisor">
+                  <SupervisorDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/public" element={<PublicDashboard />} />
           </Routes>
         </Router>
       </AuthProvider>

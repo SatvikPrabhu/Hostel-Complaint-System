@@ -10,7 +10,6 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'student',
     studentId: '',
     hostelBlock: '',
     roomNumber: '',
@@ -47,7 +46,7 @@ const Register = () => {
 
     try {
       const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
+      await register({ ...registerData, role: 'student' });
       navigate('/login');
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed. Please try again.');
@@ -121,10 +120,11 @@ const Register = () => {
                     value={formData.email}
                     onChange={handleChange}
                     className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                    placeholder="you@example.com"
+                    placeholder="you@vjti.ac.in"
                     required
                   />
                 </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Only @vjti.ac.in email addresses are allowed</p>
               </div>
 
               <div>
@@ -176,6 +176,8 @@ const Register = () => {
                 >
                   <option value="student">Student</option>
                   <option value="worker">Worker</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="admin">Admin</option>
                 </select>
               </div>
 
@@ -196,54 +198,50 @@ const Register = () => {
                 </div>
               </div>
 
-              {formData.role === 'student' && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Student ID
-                    </label>
-                    <input
-                      type="text"
-                      name="studentId"
-                      value={formData.studentId}
-                      onChange={handleChange}
-                      className="input-field dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      placeholder="STU001"
-                    />
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Student ID
+                </label>
+                <input
+                  type="text"
+                  name="studentId"
+                  value={formData.studentId}
+                  onChange={handleChange}
+                  className="input-field dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                  placeholder="STU001"
+                />
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Hostel Block
-                    </label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input
-                        type="text"
-                        name="hostelBlock"
-                        value={formData.hostelBlock}
-                        onChange={handleChange}
-                        className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                        placeholder="Block A"
-                      />
-                    </div>
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Hostel Block
+                </label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    name="hostelBlock"
+                    value={formData.hostelBlock}
+                    onChange={handleChange}
+                    className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                    placeholder="Block A"
+                  />
+                </div>
+              </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Room Number
-                    </label>
-                    <input
-                      type="text"
-                      name="roomNumber"
-                      value={formData.roomNumber}
-                      onChange={handleChange}
-                      className="input-field dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                      placeholder="101"
-                    />
-                  </div>
-                </>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Room Number
+                </label>
+                <input
+                  type="text"
+                  name="roomNumber"
+                  value={formData.roomNumber}
+                  onChange={handleChange}
+                  className="input-field dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                  placeholder="101"
+                />
+              </div>
             </div>
 
             <button
