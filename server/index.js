@@ -6,6 +6,8 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const { Pool } = require('pg');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 require('dotenv').config();
 
 const app = express();
@@ -35,6 +37,94 @@ const pool = new Pool({
 });
 
 console.log('Using PostgreSQL database');
+
+// Swagger configuration
+const swaggerOptions = {
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'HostelCare API',
+      version: '1.0.0',
+      description: 'API documentation for Hostel Complaint Management System',
+      contact: {
+        name: 'API Support',
+        email: 'support@hostelcare.com'
+      }
+    },
+    servers: [
+      {
+        url: 'http://localhost:5000',
+        description: 'Development server'
+      }
+    ],
+    components: {
+      schemas: {
+        User: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            email: { type: 'string' },
+            role: { type: 'string', enum: ['student', 'worker', 'admin', 'supervisor'] },
+            student_id: { type: 'string' },
+            hostel_block: { type: 'string' },
+            room_number: { type: 'string' },
+            phone: { type: 'string' }
+          }
+        },
+        Complaint: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            category: { type: 'string' },
+            description: { type: 'string' },
+            status: { type: 'string', enum: ['review_board', 'pending', 'assigned', 'in_progress', 'completed', 'rejected'] },
+            priority: { type: 'string', enum: ['low', 'medium', 'high'] },
+            student_id: { type: 'integer' },
+            worker_id: { type: 'integer' },
+            hostel_block: { type: 'string' },
+            room_number: { type: 'string' },
+            media_path: { type: 'string' },
+            deadline: { type: 'string', format: 'date' },
+            support_count: { type: 'integer' },
+            feedback_rating: { type: 'integer' },
+            feedback_comments: { type: 'string' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
+        },
+        Notification: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            user_id: { type: 'integer' },
+            complaint_id: { type: 'integer' },
+            type: { type: 'string', enum: ['task_assigned', 'task_completed', 'new_complaint'] },
+            message: { type: 'string' },
+            is_read: { type: 'boolean' },
+            created_at: { type: 'string', format: 'date-time' }
+          }
+        },
+        Error: {
+          type: 'object',
+          properties: {
+            message: { type: 'string' }
+          }
+        }
+      },
+      securitySchemes: {
+        sessionAuth: {
+          type: 'apiKey',
+          in: 'cookie',
+          name: 'connect.sid',
+          description: 'Session-based authentication'
+        }
+      }
+    }
+  },
+  apis: [path.join(__dirname, 'index.js')]
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -70,6 +160,59 @@ const upload = multer({
 // ==================== AUTH ROUTES ====================
 
 // Register
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [student, worker, admin, supervisor]
+ *               studentId:
+ *                 type: string
+ *               hostelBlock:
+ *                 type: string
+ *               roomNumber:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/auth/register', async (req, res) => {
   const { name, email, password, role, studentId, hostelBlock, roomNumber, phone } = req.body;
 
@@ -110,6 +253,45 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // Login
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid credentials
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
 
@@ -162,6 +344,31 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 // Logout
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     tags: [Authentication]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       500:
+ *         description: Logout failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/auth/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -205,6 +412,25 @@ app.get('/api/auth/me', (req, res) => {
 });
 
 // Get all complaints (public - no authentication required)
+/**
+ * @swagger
+ * /api/complaints/public:
+ *   get:
+ *     summary: Get all public complaints (no authentication required)
+ *     tags: [Complaints]
+ *     responses:
+ *       200:
+ *         description: List of public complaints
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 complaints:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Complaint'
+ */
 app.get('/api/complaints/public', async (req, res) => {
   try {
     const result = await pool.query(
@@ -225,6 +451,56 @@ app.get('/api/complaints/public', async (req, res) => {
 // ==================== COMPLAINT ROUTES ====================
 
 // Create complaint
+/**
+ * @swagger
+ * /api/complaints:
+ *   post:
+ *     summary: Create a new complaint
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - category
+ *               - description
+ *             properties:
+ *               category:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               priority:
+ *                 type: string
+ *                 enum: [low, medium, high]
+ *               deadline:
+ *                 type: string
+ *                 format: date
+ *               media:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       201:
+ *         description: Complaint created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/complaints', upload.single('media'), async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -262,8 +538,86 @@ app.post('/api/complaints', upload.single('media'), async (req, res) => {
 });
 
 // Get all complaints (for admin)
+/**
+ * @swagger
+ * /api/complaints:
+ *   get:
+ *     summary: Get all complaints (Admin only)
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: List of complaints
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 complaints:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Complaint'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/api/complaints', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT c.*,
+              s.name as student_name, s.email as student_email, s.room_number, s.hostel_block,
+              w.name as worker_name
+       FROM complaints c
+       LEFT JOIN users s ON c.user_id = s.id
+       LEFT JOIN users w ON c.assigned_worker_id = w.id
+       ORDER BY c.created_at DESC`
+    );
+
+    res.json({ complaints: result.rows });
+  } catch (error) {
+    console.error('Get complaints error:', error);
+    res.status(500).json({ message: 'Failed to fetch complaints' });
+  }
+});
+
+// Get all complaints (for supervisor)
+/**
+ * @swagger
+ * /api/complaints/supervisor:
+ *   get:
+ *     summary: Get all complaints (Supervisor only)
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: List of complaints
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 complaints:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Complaint'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.get('/api/complaints/supervisor', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'supervisor') {
     return res.status(403).json({ message: 'Access denied' });
   }
 
@@ -425,6 +779,51 @@ app.post('/api/complaints/:id/comments', async (req, res) => {
 });
 
 // Update complaint status
+/**
+ * @swagger
+ * /api/complaints/{id}/status:
+ *   put:
+ *     summary: Update complaint status
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [review_board, pending, assigned, in_progress, completed, rejected]
+ *     responses:
+ *       200:
+ *         description: Status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.put('/api/complaints/:id/status', async (req, res) => {
   if (!req.session.user || (req.session.user.role !== 'admin' && req.session.user.role !== 'worker')) {
     return res.status(403).json({ message: 'Access denied' });
@@ -503,6 +902,50 @@ app.put('/api/complaints/:id/details', async (req, res) => {
 });
 
 // Assign worker to complaint
+/**
+ * @swagger
+ * /api/complaints/{id}/assign:
+ *   put:
+ *     summary: Assign a worker to a complaint
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - workerId
+ *             properties:
+ *               workerId:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: Worker assigned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.put('/api/complaints/:id/assign', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied' });
@@ -539,7 +982,257 @@ app.put('/api/complaints/:id/assign', async (req, res) => {
   }
 });
 
+// Approve complaint (supervisor only - moves from review_board to pending)
+/**
+ * @swagger
+ * /api/complaints/{id}/approve:
+ *   put:
+ *     summary: Approve a complaint (Supervisor only)
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Complaint approved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.put('/api/complaints/:id/approve', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'supervisor') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE complaints SET status = $1 WHERE id = $2 AND status = $3 RETURNING *',
+      ['pending', parseInt(req.params.id), 'review_board']
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Complaint not found or not in review_board status' });
+    }
+
+    res.json({ message: 'Complaint approved successfully', complaint: result.rows[0] });
+  } catch (error) {
+    console.error('Approve complaint error:', error);
+    res.status(500).json({ message: 'Failed to approve complaint' });
+  }
+});
+
+// Update complaint deadline (supervisor only)
+/**
+ * @swagger
+ * /api/complaints/{id}/deadline:
+ *   put:
+ *     summary: Update complaint deadline (Supervisor only)
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - deadline
+ *             properties:
+ *               deadline:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Deadline updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.put('/api/complaints/:id/deadline', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'supervisor') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  const { deadline } = req.body;
+
+  if (!deadline) {
+    return res.status(400).json({ message: 'Deadline is required' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE complaints SET deadline = $1 WHERE id = $2 RETURNING *',
+      [deadline, parseInt(req.params.id)]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    res.json({ message: 'Deadline updated successfully', complaint: result.rows[0] });
+  } catch (error) {
+    console.error('Update deadline error:', error);
+    res.status(500).json({ message: 'Failed to update deadline' });
+  }
+});
+
+// Update complaint priority (supervisor only)
+/**
+ * @swagger
+ * /api/complaints/{id}/priority:
+ *   put:
+ *     summary: Update complaint priority (Supervisor only)
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - priority
+ *             properties:
+ *               priority:
+ *                 type: string
+ *                 enum: [low, medium, high]
+ *     responses:
+ *       200:
+ *         description: Priority updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+app.put('/api/complaints/:id/priority', async (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'supervisor') {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  const { priority } = req.body;
+
+  if (!priority || !['low', 'medium', 'high'].includes(priority)) {
+    return res.status(400).json({ message: 'Priority must be low, medium, or high' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE complaints SET priority = $1 WHERE id = $2 RETURNING *',
+      [priority, parseInt(req.params.id)]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    res.json({ message: 'Priority updated successfully', complaint: result.rows[0] });
+  } catch (error) {
+    console.error('Update priority error:', error);
+    res.status(500).json({ message: 'Failed to update priority' });
+  }
+});
+
 // Submit feedback
+/**
+ * @swagger
+ * /api/complaints/{id}/feedback:
+ *   post:
+ *     summary: Submit feedback for a completed complaint
+ *     tags: [Complaints]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - rating
+ *             properties:
+ *               rating:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *               comments:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Feedback submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/complaints/:id/feedback', async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -598,6 +1291,33 @@ app.post('/api/complaints/:id/feedback', async (req, res) => {
 // ==================== USER ROUTES ====================
 
 // Get all workers (for admin)
+/**
+ * @swagger
+ * /api/users/workers:
+ *   get:
+ *     summary: Get all workers (Admin only)
+ *     tags: [User Management]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: List of workers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 workers:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/api/users/workers', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied' });
@@ -636,6 +1356,43 @@ app.get('/api/users/supervisors', async (req, res) => {
 });
 
 // Delete user (admin only)
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Delete a user (Admin only)
+ *     tags: [User Management]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.delete('/api/users/:id', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied' });
@@ -661,6 +1418,33 @@ app.delete('/api/users/:id', async (req, res) => {
 // ==================== NOTIFICATION ROUTES ====================
 
 // Get notifications for current user
+/**
+ * @swagger
+ * /api/notifications:
+ *   get:
+ *     summary: Get notifications for current user
+ *     tags: [Notifications]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: List of notifications
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 notifications:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Notification'
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.get('/api/notifications', async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -684,6 +1468,43 @@ app.get('/api/notifications', async (req, res) => {
 });
 
 // Mark notification as read
+/**
+ * @swagger
+ * /api/notifications/{id}/read:
+ *   put:
+ *     summary: Mark a notification as read
+ *     tags: [Notifications]
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Notification marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Notification not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.put('/api/notifications/:id/read', async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -707,6 +1528,31 @@ app.put('/api/notifications/:id/read', async (req, res) => {
 });
 
 // Mark all notifications as read
+/**
+ * @swagger
+ * /api/notifications/read-all:
+ *   put:
+ *     summary: Mark all notifications as read for current user
+ *     tags: [Notifications]
+ *     security:
+ *       - sessionAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.put('/api/notifications/read-all', async (req, res) => {
   if (!req.session.user) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -738,6 +1584,52 @@ const createNotification = async (userId, complaintId, type, message) => {
 };
 
 // Create worker (admin only)
+/**
+ * @swagger
+ * /api/users/workers:
+ *   post:
+ *     summary: Create a new worker (Admin only)
+ *     tags: [User Management]
+ *     security:
+ *       - sessionAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - email
+ *               - password
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Worker created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       403:
+ *         description: Access denied
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 app.post('/api/users/workers', async (req, res) => {
   if (!req.session.user || req.session.user.role !== 'admin') {
     return res.status(403).json({ message: 'Access denied' });
@@ -842,6 +1734,10 @@ app.get('/api/stats/dashboard', async (req, res) => {
 });
 
 // Start server
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
 });
