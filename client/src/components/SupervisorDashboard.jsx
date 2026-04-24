@@ -37,7 +37,7 @@ const SupervisorDashboard = () => {
 
   const fetchComplaints = async () => {
     try {
-      const response = await axios.get(`${API_URL}/complaints`, { withCredentials: true });
+      const response = await axios.get(`${API_URL}/complaints/supervisor`, { withCredentials: true });
       setComplaints(response.data.complaints);
     } catch (error) {
       console.error('Failed to fetch complaints:', error);
@@ -51,27 +51,38 @@ const SupervisorDashboard = () => {
     navigate('/login');
   };
 
-  const handleUpdateStatus = async (complaintId, status) => {
+  const handleApprove = async (complaintId) => {
     try {
       await axios.put(
-        `${API_URL}/complaints/${complaintId}/status`,
-        { status },
+        `${API_URL}/complaints/${complaintId}/approve`,
+        {},
         { withCredentials: true }
       );
       fetchComplaints();
     } catch (error) {
-      console.error('Failed to update status:', error);
-      alert('Failed to update status. Please try again.');
+      console.error('Failed to approve complaint:', error);
+      alert('Failed to approve complaint. Please try again.');
     }
   };
 
   const handleEditDetails = async () => {
     try {
-      await axios.put(
-        `${API_URL}/complaints/${selectedComplaint.id}/details`,
-        { deadline: editDeadline || null, priority: editPriority },
-        { withCredentials: true }
-      );
+      // Update deadline if changed
+      if (editDeadline !== (selectedComplaint.deadline ? selectedComplaint.deadline.split('T')[0] : '')) {
+        await axios.put(
+          `${API_URL}/complaints/${selectedComplaint.id}/deadline`,
+          { deadline: editDeadline || null },
+          { withCredentials: true }
+        );
+      }
+      // Update priority if changed
+      if (editPriority !== selectedComplaint.priority) {
+        await axios.put(
+          `${API_URL}/complaints/${selectedComplaint.id}/priority`,
+          { priority: editPriority },
+          { withCredentials: true }
+        );
+      }
       setShowEditModal(false);
       setSelectedComplaint(null);
       setEditDeadline('');
@@ -357,38 +368,14 @@ const SupervisorDashboard = () => {
                         onClick={() => openEditModal(complaint)}
                         className="btn-secondary text-xs px-3 py-1"
                       >
-                        Edit
+                        Edit Details
                       </button>
                       {complaint.status === 'review_board' && (
                         <button
-                          onClick={() => handleUpdateStatus(complaint.id, 'pending')}
+                          onClick={() => handleApprove(complaint.id)}
                           className="btn-primary text-xs px-3 py-1"
                         >
                           Approve
-                        </button>
-                      )}
-                      {complaint.status === 'pending' && (
-                        <button
-                          onClick={() => handleUpdateStatus(complaint.id, 'assigned')}
-                          className="btn-secondary text-xs px-3 py-1"
-                        >
-                          Assign
-                        </button>
-                      )}
-                      {complaint.status === 'assigned' && (
-                        <button
-                          onClick={() => handleUpdateStatus(complaint.id, 'in_progress')}
-                          className="btn-secondary text-xs px-3 py-1"
-                        >
-                          Start
-                        </button>
-                      )}
-                      {complaint.status === 'in_progress' && (
-                        <button
-                          onClick={() => handleUpdateStatus(complaint.id, 'completed')}
-                          className="btn-secondary text-xs px-3 py-1"
-                        >
-                          Complete
                         </button>
                       )}
                     </div>
