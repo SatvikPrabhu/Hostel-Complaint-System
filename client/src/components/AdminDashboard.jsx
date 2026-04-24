@@ -32,6 +32,9 @@ const AdminDashboard = () => {
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [selectedWorker, setSelectedWorker] = useState('');
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editDeadline, setEditDeadline] = useState('');
+  const [editPriority, setEditPriority] = useState('');
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -113,6 +116,31 @@ const AdminDashboard = () => {
       console.error('Failed to update status:', error);
       alert('Failed to update status. Please try again.');
     }
+  };
+
+  const handleEditDetails = async () => {
+    try {
+      await axios.put(
+        `${API_URL}/complaints/${selectedComplaint.id}/details`,
+        { deadline: editDeadline || null, priority: editPriority },
+        { withCredentials: true }
+      );
+      setShowEditModal(false);
+      setSelectedComplaint(null);
+      setEditDeadline('');
+      setEditPriority('');
+      fetchData();
+    } catch (error) {
+      console.error('Failed to update details:', error);
+      alert('Failed to update details. Please try again.');
+    }
+  };
+
+  const openEditModal = (complaint) => {
+    setSelectedComplaint(complaint);
+    setEditDeadline(complaint.deadline ? complaint.deadline.split('T')[0] : '');
+    setEditPriority(complaint.priority);
+    setShowEditModal(true);
   };
 
   const getStatusBadge = (status) => {
@@ -436,6 +464,12 @@ const AdminDashboard = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditModal(complaint)}
+                          className="btn-secondary text-xs px-3 py-1"
+                        >
+                          Edit
+                        </button>
                         {complaint.status === 'review_board' && (
                           <button
                             onClick={() => handleUpdateStatus(complaint.id, 'pending')}
@@ -532,6 +566,74 @@ const AdminDashboard = () => {
                 className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Assign Worker
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Details Modal */}
+      {showEditModal && selectedComplaint && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="card p-6 w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Edit Complaint Details</h2>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setSelectedComplaint(null);
+                  setEditDeadline('');
+                  setEditPriority('');
+                }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                  <strong>Complaint:</strong> {selectedComplaint.category.charAt(0).toUpperCase() + selectedComplaint.category.slice(1)}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  <strong>Student:</strong> {selectedComplaint.student_name}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Deadline (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={editDeadline}
+                  onChange={(e) => setEditDeadline(e.target.value)}
+                  className="input-field dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Priority
+                </label>
+                <select
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(e.target.value)}
+                  className="input-field dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleEditDetails}
+                className="btn-primary w-full"
+              >
+                Update Details
               </button>
             </div>
           </div>

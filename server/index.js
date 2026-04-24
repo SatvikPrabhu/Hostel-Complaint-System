@@ -80,8 +80,8 @@ app.post('/api/auth/register', async (req, res) => {
   }
 
   // For student registration, validate email domain
-  if (role === 'student' && !email.endsWith('@vjti.ac.in')) {
-    return res.status(400).json({ message: 'Only @vjti.ac.in email addresses are allowed for student registration' });
+  if (role === 'student' && !email.endsWith('vjti.ac.in')) {
+    return res.status(400).json({ message: 'Only vjti.ac.in email addresses are allowed for student registration' });
   }
 
   try {
@@ -474,6 +474,31 @@ app.put('/api/complaints/:id/status', async (req, res) => {
   } catch (error) {
     console.error('Update status error:', error);
     res.status(500).json({ message: 'Failed to update status' });
+  }
+});
+
+// Update complaint deadline and priority (admin and supervisor)
+app.put('/api/complaints/:id/details', async (req, res) => {
+  if (!req.session.user || (req.session.user.role !== 'admin' && req.session.user.role !== 'supervisor')) {
+    return res.status(403).json({ message: 'Access denied' });
+  }
+
+  const { deadline, priority } = req.body;
+
+  try {
+    const result = await pool.query(
+      'UPDATE complaints SET deadline = $1, priority = $2 WHERE id = $3 RETURNING *',
+      [deadline || null, priority, parseInt(req.params.id)]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Complaint not found' });
+    }
+
+    res.json({ message: 'Complaint details updated successfully', complaint: result.rows[0] });
+  } catch (error) {
+    console.error('Update details error:', error);
+    res.status(500).json({ message: 'Failed to update complaint details' });
   }
 });
 

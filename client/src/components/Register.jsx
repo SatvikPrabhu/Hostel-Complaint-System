@@ -102,7 +102,7 @@ const Register = () => {
                     value={formData.name}
                     onChange={handleChange}
                     className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                    placeholder="John Doe"
+                    
                     required
                   />
                 </div>
@@ -120,11 +120,11 @@ const Register = () => {
                     value={formData.email}
                     onChange={handleChange}
                     className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                    placeholder="you@vjti.ac.in"
+                    
                     required
                   />
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Only @vjti.ac.in email addresses are allowed</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Only vjti.ac.in email addresses are allowed</p>
               </div>
 
               <div>
@@ -139,7 +139,7 @@ const Register = () => {
                     value={formData.password}
                     onChange={handleChange}
                     className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                    placeholder="••••••••"
+                    
                     required
                   />
                 </div>
@@ -157,7 +157,7 @@ const Register = () => {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                    placeholder="••••••••"
+                    
                     required
                   />
                 </div>
@@ -193,7 +193,7 @@ const Register = () => {
                     value={formData.phone}
                     onChange={handleChange}
                     className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                    placeholder="9876543210"
+                    
                   />
                 </div>
               </div>
@@ -208,7 +208,7 @@ const Register = () => {
                   value={formData.studentId}
                   onChange={handleChange}
                   className="input-field dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                  placeholder="STU001"
+                  
                 />
               </div>
 
@@ -224,7 +224,7 @@ const Register = () => {
                     value={formData.hostelBlock}
                     onChange={handleChange}
                     className="input-field pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                    placeholder="Block A"
+                    
                   />
                 </div>
               </div>
@@ -239,7 +239,7 @@ const Register = () => {
                   value={formData.roomNumber}
                   onChange={handleChange}
                   className="input-field dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                  placeholder="101"
+                  
                 />
               </div>
             </div>
